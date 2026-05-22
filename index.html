@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本語の数字マスターアプリ</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            color: #334e68;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .card-container {
+            perspective: 1000px;
+            width: 350px;
+            height: 250px;
+            cursor: pointer;
+        }
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border-radius: 15px;
+        }
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .card-front {
+            background-color: #ffffff;
+            color: #102a43;
+            border: 3px solid #627d98;
+        }
+        .card-back {
+            background-color: #627d98;
+            color: white;
+            transform: rotateY(180deg);
+        }
+        .category {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #9fb3c8;
+            margin-bottom: 10px;
+        }
+        .card-back .category {
+            color: #bcccdc;
+        }
+        .question {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        .answer {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .reading {
+            font-size: 20px;
+            background-color: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+        button {
+            background-color: #486581;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #334e68;
+        }
+        .tip {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #627d98;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔢 日本語の数字マスター (1-30)</h1>
+
+    <div class="card-container" onclick="flipCard()">
+        <div class="card" id="card">
+            <div class="card-face card-front">
+                <div class="category" id="front-category">STAGE 1: 時間</div>
+                <div class="question" id="front-text">4:00</div>
+            </div>
+            <div class="card-face card-back">
+                <div class="category" id="back-category">STAGE 1: 時間</div>
+                <div class="answer" id="back-text">4時</div>
+                <div class="reading" id="back-reading">よじ (yoji)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tip">💡 カードをクリックすると裏返るよ！</div>
+
+    <div class="controls">
+        <button onclick="prevCard()">前の問題</button>
+        <button onclick="nextCard()">次の問題</button>
+    </div>
+
+    <script>
+        // クイズのデータ（「4, 7, 9」の変化と「時間・年齢・つき」を網羅）
+        const quizData = [
+            // --- STAGE 1: 時間 ---
+            { cat: "STAGE 1: 時間", q: "4:00", a: "4時", r: "よじ (yoji) ⚠️「よん」はダメ" },
+            { cat: "STAGE 1: 時間", q: "7:00", a: "7時", r: "しちじ (shichiji)" },
+            { cat: "STAGE 1: 時間", q: "9:00", a: "9時", r: "くじ (kuji) ⚠️「きゅう」はダメ" },
+            { cat: "STAGE 1: 時間", q: "12:00", a: "12時", r: "じゅうにじ (jūniji)" },
+            
+            // --- STAGE 2: 年齢 ---
+            { cat: "STAGE 2: 年齢", q: "1 year old", a: "1歳", r: "いっさい (issai) ⚠️小さい「つ」" },
+            { cat: "STAGE 2: 年齢", q: "4 years old", a: "4歳", r: "よんさい (yonsai)" },
+            { cat: "STAGE 2: 年齢", q: "7 years old", a: "7歳", r: "ななさい (nanasai)" },
+            { cat: "STAGE 2: 年齢", q: "9 years old", a: "9歳", r: "きゅうさい (kyūsai)" },
+            { cat: "STAGE 2: 年齢", q: "20 years old", a: "20歳", r: "はたち (hatachi) ⭐特別" },
+            { cat: "STAGE 2: 年齢", q: "24 years old", a: "24歳", r: "にじゅうよんさい" },
+            
+            // --- STAGE 3: つき (月・ヶ月) ---
+            { cat: "STAGE 3: つき", q: "April (4th month)", a: "4月", r: "しがつ (shigatsu) ⚠️「し」を使う" },
+            { cat: "STAGE 3: つき", q: "4 months", a: "4ヶ月", r: "よんかげつ (yonkagetsu)" },
+            { cat: "STAGE 3: つき", q: "7 months", a: "7ヶ月", r: "ななかげつ (nanakagetsu)" },
+            { cat: "STAGE 3: つき", q: "9 months", a: "9ヶ月", r: "きゅうかげつ (kyūkagetsu)" },
+            { cat: "STAGE 3: つき", q: "30 months", a: "30ヶ月", r: "さんじゅっかげつ (sanjukkagetsu)" }
+        ];
+
+        let currentIndex = 0;
+        const card = document.getElementById('card');
+
+        function updateCard() {
+            // カードを表面に戻してからデータを書き換える
+            card.classList.remove('is-flipped');
+            setTimeout(() => {
+                const data = quizData[currentIndex];
+                document.getElementById('front-category').innerText = data.cat;
+                document.getElementById('back-category').innerText = data.cat;
+                document.getElementById('front-text').innerText = data.q;
+                document.getElementById('back-text').innerText = data.a;
+                document.getElementById('back-reading').innerText = data.r;
+            }, 150); 
+        }
+
+        function flipCard() {
+            card.classList.toggle('is-flipped');
+        }
+
+        function nextCard() {
+            currentIndex = (currentIndex + 1) % quizData.length;
+            updateCard();
+        }
+
+        function prevCard() {
+            currentIndex = (currentIndex - 1 + quizData.length) % quizData.length;
+            updateCard();
+        }
+
+        // 最初のカードをセット
+        updateCard();
+    </script>
+</body>
+</html>
